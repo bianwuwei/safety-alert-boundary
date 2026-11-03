@@ -1,0 +1,610 @@
+{
+  "version": "0.1",
+  "liability": {
+    "title": "假阳率／假阴率责任兜底（结构演示）",
+    "title_en": "False-alarm / missed-alarm liability (structure demo)",
+    "disclaimer": "结构演示，不是法律意见：只提示合同里要有哪几块，措辞须由双方法务确认。不替代安全评价、法定安全设施或人工巡检。",
+    "disclaimer_en": "Structure demo, not legal advice: it only shows which pieces a contract needs; wording must be confirmed by both sides' counsel. Does not replace safety assessments, statutory safety systems or manual patrols.",
+    "items": [
+      {
+        "key": "fpDefinition",
+        "label": "误报率口径与统计周期",
+        "label_en": "False-alarm definition and counting period",
+        "okWhen": {
+          "field": "fpRateDefinedInWriting",
+          "eq": true
+        },
+        "ok": "已书面约定",
+        "ok_en": "Agreed in writing",
+        "missing": "未约定：不对外报误报率",
+        "missing_en": "Not agreed: no false-alarm figures externally"
+      },
+      {
+        "key": "missLiability",
+        "label": "漏报责任归属",
+        "label_en": "Missed-alarm liability",
+        "okWhen": {
+          "field": "missLiabilityAgreed",
+          "eq": true
+        },
+        "ok": "已约定：AI 辅助，不替代人工巡检／法定安全设施",
+        "ok_en": "Agreed: AI assists, does not replace patrols / statutory systems",
+        "missing": "未约定：暂缓签交付",
+        "missing_en": "Not agreed: hold signing"
+      },
+      {
+        "key": "zeroMiss",
+        "label": "零漏报承诺",
+        "label_en": "Zero-miss promise",
+        "okWhen": {
+          "field": "clientWantsZeroMiss",
+          "eq": false
+        },
+        "ok": "未要求",
+        "ok_en": "Not requested",
+        "missing": "客户要求：拒单",
+        "missing_en": "Requested by customer: reject"
+      },
+      {
+        "key": "linkage",
+        "label": "联动物理动作",
+        "label_en": "Physical-action linkage",
+        "okWhen": {
+          "any": [
+            {
+              "field": "alarmLinksPhysicalAction",
+              "eq": false
+            },
+            {
+              "field": "hasHumanConfirmForLinkage",
+              "eq": true
+            }
+          ]
+        },
+        "ok": "不联动，或联动前有人工确认",
+        "ok_en": "No linkage, or human confirmation before linkage",
+        "missing": "联动但无人工确认：拒单",
+        "missing_en": "Linked with no human confirmation: reject"
+      }
+    ],
+    "ruleIds": [
+      "S10-public-metric-as-promise",
+      "S11-fp-definition-missing",
+      "S12-metric-text-without-definition",
+      "S13-miss-liability-missing",
+      "S14-zero-miss-demand",
+      "S15-linkage-without-human-confirm"
+    ]
+  },
+  "rules": [
+    {
+      "id": "S01-single-frame-direct-alarm",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFire",
+            "eq": true
+          },
+          {
+            "field": "singleFrameTriggersAlarm",
+            "eq": true
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "单帧检出就直接触发高阶告警 → 拒单。先加时序连续帧校验（如连续 ≥3~5 秒）。",
+      "message_en": "A single-frame detection fires a high-level alarm directly → reject. Add a temporal multi-frame check first (e.g. sustained ≥3–5 s).",
+      "gaps": [
+        "fireRecheck"
+      ]
+    },
+    {
+      "id": "S02-no-thermal-recheck",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFire",
+            "eq": true
+          },
+          {
+            "field": "hasThermalRecheck",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "defer",
+      "message": "烟火告警没有红外／热成像测温差复核 → 暂缓承诺烟火误报指标。",
+      "message_en": "Fire/smoke alarms have no infrared / thermal temperature-difference recheck → hold any fire false-alarm figures.",
+      "gaps": [
+        "fireRecheck"
+      ]
+    },
+    {
+      "id": "S03-linked-fire-without-double-check",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFire",
+            "eq": true
+          },
+          {
+            "field": "alarmLinksPhysicalAction",
+            "eq": true
+          },
+          {
+            "any": [
+              {
+                "field": "singleFrameTriggersAlarm",
+                "eq": true
+              },
+              {
+                "field": "hasThermalRecheck",
+                "eq": false
+              }
+            ]
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "烟火告警要联动声光／喷淋，却没过「连续帧 + 测温差」两道复核 → 拒单。",
+      "message_en": "Fire alarms will drive beacons / sprinklers but have not passed both the multi-frame and temperature-difference checks → reject.",
+      "gaps": [
+        "fireRecheck"
+      ]
+    },
+    {
+      "id": "S04-hot-work-without-mask",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFire",
+            "eq": true
+          },
+          {
+            "field": "hasHotWork",
+            "eq": true
+          },
+          {
+            "field": "hasHotWorkMask",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "现场有动火作业，电焊区却不支持报备期内的时间-空间动态掩模 → 弧光会被当火灾，拒单。",
+      "message_en": "There is hot work on site, but welding zones cannot be masked by time and area during the permit window → arc flashes will read as fire; reject.",
+      "gaps": [
+        "hotWorkMask"
+      ]
+    },
+    {
+      "id": "S05-ppe-without-pose",
+      "when": {
+        "all": [
+          {
+            "field": "scopePPE",
+            "eq": true
+          },
+          {
+            "field": "ppeBoundToPose",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "反光衣／安全帽识别没绑定骨骼关键点或头肩-躯干关联 → 托盘、缠绕膜、防雨布会被当违规人员，拒单。",
+      "message_en": "Vest / helmet recognition is not tied to body keypoints or head-shoulder-torso association → pallets, stretch film and tarps will be flagged as violators; reject.",
+      "gaps": [
+        "pose"
+      ]
+    },
+    {
+      "id": "S06-fence-bbox-trigger",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFence",
+            "eq": true
+          },
+          {
+            "field": "fenceUsesGroundPoint",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "围栏按检测框中心点／外接矩形相交判入侵 → 吊臂、货车阴影会被当闯入，拒单。改为只认接地点。",
+      "message_en": "The fence triggers on box centre / bounding-box overlap → crane booms and truck shadows will count as intrusions; reject. Trigger on ground-contact points only.",
+      "gaps": [
+        "fenceGeometry"
+      ]
+    },
+    {
+      "id": "S07-fence-no-shadow-removal",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFence",
+            "eq": true
+          },
+          {
+            "field": "hasShadowRemoval",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "defer",
+      "message": "围栏没有阴影剔除 → 暂缓承诺围栏误报指标。",
+      "message_en": "The fence has no shadow removal → hold any fence false-alarm figures.",
+      "gaps": [
+        "fenceGeometry"
+      ]
+    },
+    {
+      "id": "S08-fence-no-anchor",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFence",
+            "eq": true
+          },
+          {
+            "field": "hasSceneAnchor",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "静态围栏没绑定场景锚点、不做开机／预置位后的基准比对 → 球机一碰歪围栏就漂移，拒单。",
+      "message_en": "Static fences are not bound to scene anchors and are not re-checked against the reference image at power-up / preset → one bumped camera shifts the fence; reject.",
+      "gaps": [
+        "anchor"
+      ]
+    },
+    {
+      "id": "S09-no-video-quality-probe",
+      "when": {
+        "all": [
+          {
+            "field": "hasVideoQualityProbe",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "没有视频流质量自检（盲拍、遮挡、偏色、过曝、脏污、卡死）→ 镜头被糊住也报「安全」，拒单。",
+      "message_en": "No video-stream quality probe (blank, blocked, colour cast, overexposed, dirty lens, frozen) → a blinded camera still reports \"safe\"; reject.",
+      "gaps": [
+        "videoProbe"
+      ]
+    },
+    {
+      "id": "S10-public-metric-as-promise",
+      "when": {
+        "all": [
+          {
+            "field": "publicMetricAsPromise",
+            "eq": true
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "把公开数据集指标当现场承诺 → 拒单。公开数据集指标不代表现场。",
+      "message_en": "A public-dataset metric is being offered as an on-site promise → reject. Public-dataset numbers do not represent the site.",
+      "gaps": [
+        "fpDefinition"
+      ]
+    },
+    {
+      "id": "S11-fp-definition-missing",
+      "when": {
+        "all": [
+          {
+            "field": "fpRateDefinedInWriting",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "defer",
+      "message": "误报率口径和统计周期未书面约定 → 暂缓对外报任何误报率数字。",
+      "message_en": "The false-alarm definition and counting period are not agreed in writing → hold any false-alarm figures.",
+      "gaps": [
+        "fpDefinition"
+      ]
+    },
+    {
+      "id": "S12-metric-text-without-definition",
+      "when": {
+        "all": [
+          {
+            "field": "claimedMetricText",
+            "neq": ""
+          },
+          {
+            "field": "fpRateDefinedInWriting",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "已写了指标话术，但没有书面口径和统计周期 → 这段话不进方案和报价。",
+      "message_en": "A metric claim has been drafted with no written definition or counting period → keep it out of the proposal and the quote.",
+      "gaps": [
+        "fpDefinition"
+      ]
+    },
+    {
+      "id": "S13-miss-liability-missing",
+      "when": {
+        "all": [
+          {
+            "field": "missLiabilityAgreed",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "defer",
+      "message": "漏报责任归属未约定 → 暂缓签交付，先写明 AI 是辅助，不替代人工巡检和法定安全设施。",
+      "message_en": "Liability for missed alarms is not agreed → hold signing; first state in writing that AI assists and does not replace manual patrols or statutory safety systems.",
+      "gaps": [
+        "missLiability"
+      ]
+    },
+    {
+      "id": "S14-zero-miss-demand",
+      "when": {
+        "all": [
+          {
+            "field": "clientWantsZeroMiss",
+            "eq": true
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "客户要求「零漏报」承诺 → 拒单。",
+      "message_en": "The customer wants a \"zero missed alarms\" promise → reject.",
+      "gaps": [
+        "missLiability"
+      ]
+    },
+    {
+      "id": "S15-linkage-without-human-confirm",
+      "when": {
+        "all": [
+          {
+            "field": "alarmLinksPhysicalAction",
+            "eq": true
+          },
+          {
+            "field": "hasHumanConfirmForLinkage",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "reject",
+      "message": "告警联动声光／喷淋／停机，却没有人工确认环节 → 拒单。",
+      "message_en": "Alarms drive beacons / sprinklers / shutdowns with no human confirmation step → reject.",
+      "gaps": [
+        "humanConfirm"
+      ]
+    },
+    {
+      "id": "S16-scope-unset",
+      "when": {
+        "all": [
+          {
+            "field": "scopeFire",
+            "eq": false
+          },
+          {
+            "field": "scopePPE",
+            "eq": false
+          },
+          {
+            "field": "scopeFence",
+            "eq": false
+          }
+        ]
+      },
+      "outcome": "defer",
+      "message": "还没勾本单包含哪类告警 → 先确认范围，再按类型过边界。",
+      "message_en": "No alarm type has been selected for this deal → confirm the scope first, then check each type's boundaries.",
+      "gaps": [
+        "scope"
+      ]
+    },
+    {
+      "id": "S17-allow-boundaries-met",
+      "when": {
+        "all": [
+          {
+            "any": [
+              {
+                "field": "scopeFire",
+                "eq": true
+              },
+              {
+                "field": "scopePPE",
+                "eq": true
+              },
+              {
+                "field": "scopeFence",
+                "eq": true
+              }
+            ]
+          },
+          {
+            "any": [
+              {
+                "field": "scopeFire",
+                "eq": false
+              },
+              {
+                "all": [
+                  {
+                    "field": "singleFrameTriggersAlarm",
+                    "eq": false
+                  },
+                  {
+                    "field": "hasThermalRecheck",
+                    "eq": true
+                  },
+                  {
+                    "any": [
+                      {
+                        "field": "hasHotWork",
+                        "eq": false
+                      },
+                      {
+                        "field": "hasHotWorkMask",
+                        "eq": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "any": [
+              {
+                "field": "scopePPE",
+                "eq": false
+              },
+              {
+                "all": [
+                  {
+                    "field": "ppeBoundToPose",
+                    "eq": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "any": [
+              {
+                "field": "scopeFence",
+                "eq": false
+              },
+              {
+                "all": [
+                  {
+                    "field": "fenceUsesGroundPoint",
+                    "eq": true
+                  },
+                  {
+                    "field": "hasShadowRemoval",
+                    "eq": true
+                  },
+                  {
+                    "field": "hasSceneAnchor",
+                    "eq": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "field": "hasVideoQualityProbe",
+            "eq": true
+          },
+          {
+            "field": "publicMetricAsPromise",
+            "eq": false
+          },
+          {
+            "field": "fpRateDefinedInWriting",
+            "eq": true
+          },
+          {
+            "field": "missLiabilityAgreed",
+            "eq": true
+          },
+          {
+            "field": "clientWantsZeroMiss",
+            "eq": false
+          },
+          {
+            "any": [
+              {
+                "field": "alarmLinksPhysicalAction",
+                "eq": false
+              },
+              {
+                "field": "hasHumanConfirmForLinkage",
+                "eq": true
+              }
+            ]
+          }
+        ]
+      },
+      "outcome": "allow",
+      "message": "所选告警类型的技术与工程边界齐全，责任口径已书面约定 → 可在约定口径内报价，对外写「AI 辅助告警」。",
+      "message_en": "Technical and engineering boundaries for the selected alarm types are in place and liability is agreed in writing → OK to quote within the agreed definitions, described as \"AI-assisted alerting\".",
+      "gaps": []
+    }
+  ],
+  "gaps": {
+    "scope": {
+      "label": "告警范围",
+      "label_en": "Alarm scope",
+      "action": "和安全科确认本单做哪几类：烟火、穿戴、电子围栏。",
+      "action_en": "Confirm with the safety department which types this deal covers: fire/smoke, PPE, electronic fence."
+    },
+    "fireRecheck": {
+      "label": "烟火双复核",
+      "label_en": "Fire double-check",
+      "action": "单帧不直触高阶告警：加连续帧时序校验（如 ≥3~5 秒）+ 红外／热成像测温差复核。",
+      "action_en": "No single-frame high-level alarms: add a temporal multi-frame check (e.g. ≥3–5 s) plus an infrared / thermal temperature-difference recheck."
+    },
+    "hotWorkMask": {
+      "label": "动火作业动态掩模",
+      "label_en": "Hot-work dynamic mask",
+      "action": "接入动火作业报备，报备期内对电焊区做时间-空间动态屏蔽。",
+      "action_en": "Hook into hot-work permits and mask welding zones by time and area during the permit window."
+    },
+    "pose": {
+      "label": "人形骨架绑定",
+      "label_en": "Body-skeleton binding",
+      "action": "穿戴识别绑定骨骼关键点或头肩-躯干关联置信度；没有有效人形主干，不报穿戴告警。",
+      "action_en": "Tie PPE recognition to body keypoints or head-shoulder-torso confidence; no valid body skeleton, no PPE alarm."
+    },
+    "fenceGeometry": {
+      "label": "接地点判定 + 阴影剔除",
+      "label_en": "Ground-point trigger + shadow removal",
+      "action": "入侵只认脚底关键点／车轮着地点落入围栏多边形，并加阴影剔除。",
+      "action_en": "Count an intrusion only when a foot keypoint / wheel contact point lands inside the fence polygon, and add shadow removal."
+    },
+    "anchor": {
+      "label": "场景锚点防漂移",
+      "label_en": "Scene-anchor drift guard",
+      "action": "围栏绑定固定钢柱、地面标志等几何锚点；开机／预置位到位后比对基准图像单应性矩阵，超公差就告警、冻结围栏、人工重核。",
+      "action_en": "Bind fences to fixed anchors (steel columns, floor markings); after power-up / preset, compare against the reference image homography; beyond tolerance, alarm, freeze the fence and re-verify by hand."
+    },
+    "videoProbe": {
+      "label": "视频质量自检",
+      "label_en": "Video quality probe",
+      "action": "上视频流质量探针；锐度或直方图熵低于阈值超过设定时长，优先报「视觉通道失活」。",
+      "action_en": "Add a stream-quality probe; when sharpness or histogram entropy stays below threshold past a set time, raise \"vision channel down\" first."
+    },
+    "fpDefinition": {
+      "label": "误报率书面口径",
+      "label_en": "Written false-alarm definition",
+      "action": "书面约定误报率怎么计、统计周期多长，只用本现场数据算，不拿公开数据集指标。",
+      "action_en": "Agree in writing how false alarms are counted and over what period, using this site's data only — never public-dataset metrics."
+    },
+    "missLiability": {
+      "label": "漏报责任归属",
+      "label_en": "Missed-alarm liability",
+      "action": "书面写明 AI 是辅助，不替代人工巡检和法定安全设施；不接受「零漏报」条款。",
+      "action_en": "State in writing that AI assists and does not replace manual patrols or statutory safety systems; do not accept a \"zero missed alarms\" clause."
+    },
+    "humanConfirm": {
+      "label": "联动人工确认",
+      "label_en": "Human confirmation before linkage",
+      "action": "联动声光／喷淋／停机前加人工确认环节，或更严格的多重复核。",
+      "action_en": "Put a human confirmation step — or stricter multi-check — before driving beacons / sprinklers / shutdowns."
+    }
+  }
+}

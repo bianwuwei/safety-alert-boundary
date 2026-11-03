@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>安监告警边界 · Safety Alert Boundary</title>
+  <meta name="description" content="一线踩出来的安监视觉告警边界清单。报价／承诺前先自查技术与工程边界，再写进方案与合同。" />
+  <meta name="author" content="無為" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app-header">
+      <div class="brand">
+        <h1 data-i18n="title">安监告警边界</h1>
+        <span class="en">safety-alert-boundary</span>
+        <button type="button" id="lang-toggle" class="lang-toggle" aria-label="切换语言 / Switch language"><span data-lang="zh">中文</span> / <span data-lang="en">EN</span></button>
+      </div>
+      <p class="tagline" data-i18n="tagline">一线踩出来的经验：对外报价、承诺烟火／穿戴／电子围栏告警效果前，先把技术与工程边界、误报漏报责任过一遍。</p>
+      <p class="meta"><span data-i18n="audience">面向甲方安全科／厂长，以及谈落地的交付／销售</span> · <span id="rules-meta" data-i18n="rulesLoading">加载规则中…</span></p>
+    </header>
+
+    <p id="loading" class="loading" data-i18n="loading">正在加载规则…</p>
+
+    <div id="app-main" class="layout" hidden>
+      <section class="panel" aria-labelledby="input-title">
+        <h2 id="input-title" data-i18n="inputTitle">场景输入</h2>
+        <form id="scenario-form" autocomplete="off">
+          <div class="field">
+            <label class="main-label" for="site" data-i18n="site">场景／园区</label>
+            <input type="text" id="site" name="site" value="化工园区" placeholder="默认：化工园区" data-i18n-placeholder="sitePh" />
+          </div>
+          <h3 class="group-title" data-i18n="grpScope">本单告警范围</h3>
+          <div class="scope-group" role="group" aria-label="本单告警范围" data-i18n-aria-label="grpScope">
+              <label><input type="checkbox" id="scopeFire" name="scopeFire" /> <span data-i18n="scopeFire">烟火检测</span></label>
+              <label><input type="checkbox" id="scopePPE" name="scopePPE" /> <span data-i18n="scopePPE">反光衣／安全帽</span></label>
+              <label><input type="checkbox" id="scopeFence" name="scopeFence" /> <span data-i18n="scopeFence">电子围栏</span></label>
+          </div>
+          <h3 class="group-title" data-i18n="grpFire">烟火检测</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" id="singleFrameTriggersAlarm" name="singleFrameTriggersAlarm" />
+            <span data-i18n="singleFrameTriggersAlarm">告警是否单帧直触（单帧检出即触发高阶告警）</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasThermalRecheck" name="hasThermalRecheck" />
+            <span data-i18n="hasThermalRecheck">是否有红外／热成像测温差复核</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasHotWork" name="hasHotWork" />
+            <span data-i18n="hasHotWork">现场有无动火作业（电焊等）</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasHotWorkMask" name="hasHotWorkMask" />
+            <span data-i18n="hasHotWorkMask">动火报备期是否支持电焊区时间-空间动态掩模</span>
+          </label>
+          <h3 class="group-title" data-i18n="grpPPE">反光衣／安全帽</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" id="ppeBoundToPose" name="ppeBoundToPose" />
+            <span data-i18n="ppeBoundToPose">穿戴识别是否绑定骨骼关键点／头肩-躯干关联</span>
+          </label>
+          <h3 class="group-title" data-i18n="grpFence">电子围栏</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" id="fenceUsesGroundPoint" name="fenceUsesGroundPoint" />
+            <span data-i18n="fenceUsesGroundPoint">围栏判定是否用接地点（脚底关键点／车轮着地点）</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasShadowRemoval" name="hasShadowRemoval" />
+            <span data-i18n="hasShadowRemoval">是否有阴影剔除</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasSceneAnchor" name="hasSceneAnchor" />
+            <span data-i18n="hasSceneAnchor">有无场景锚点防漂移（开机／预置位后比对基准图，超差冻结围栏）</span>
+          </label>
+          <h3 class="group-title" data-i18n="grpCommon">通用</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasVideoQualityProbe" name="hasVideoQualityProbe" />
+            <span data-i18n="hasVideoQualityProbe">有无视频质量自检（盲拍、遮挡、偏色、过曝、脏污、卡死）</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="publicMetricAsPromise" name="publicMetricAsPromise" />
+            <span data-i18n="publicMetricAsPromise">公开数据集指标是否被当作现场承诺</span>
+          </label>
+          <h3 class="group-title" data-i18n="grpLiability">责任兜底（结构演示）</h3>
+          <label class="checkbox-row">
+            <input type="checkbox" id="fpRateDefinedInWriting" name="fpRateDefinedInWriting" />
+            <span data-i18n="fpRateDefinedInWriting">是否已书面约定误报率口径和统计周期</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="missLiabilityAgreed" name="missLiabilityAgreed" />
+            <span data-i18n="missLiabilityAgreed">是否已约定漏报责任归属（AI 是辅助，不替代人工巡检／法定安全设施）</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="alarmLinksPhysicalAction" name="alarmLinksPhysicalAction" />
+            <span data-i18n="alarmLinksPhysicalAction">告警是否联动声光／喷淋／停机等物理动作</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="hasHumanConfirmForLinkage" name="hasHumanConfirmForLinkage" />
+            <span data-i18n="hasHumanConfirmForLinkage">联动前是否有人工确认环节</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="clientWantsZeroMiss" name="clientWantsZeroMiss" />
+            <span data-i18n="clientWantsZeroMiss">客户是否要求「零漏报」承诺</span>
+          </label>
+          <div class="field">
+            <label class="main-label" for="claimedMetricText" data-i18n="claimedMetricText">拟写进方案的指标话术（可选）</label>
+            <input type="text" id="claimedMetricText" name="claimedMetricText" placeholder="例：误报率低于 X%" data-i18n-placeholder="claimedMetricTextPh" />
+            <p class="hint" data-i18n="claimedMetricTextHint">没有书面口径却填写此处 → 将触发拒单</p>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="primary" id="btn-eval" data-i18n="btnEval">重新评估</button>
+            <button type="button" class="danger" id="btn-dangerous" data-i18n="btnDangerous">危险承诺预设</button>
+            <button type="button" id="btn-reset" data-i18n="btnReset">重置</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="output-title">
+        <h2 id="output-title" data-i18n="outputTitle">边界输出</h2>
+        <div class="list-block next" id="list-next">
+          <h3><span data-i18n="nextTitle">先补哪项证据</span> <span class="count">0</span></h3>
+          <div class="body"></div>
+        </div>
+        <div class="list-block liability" id="list-liability">
+          <h3><span id="liability-title">假阳率／假阴率责任兜底（结构演示）</span> <span class="count">0</span></h3>
+          <div class="body"></div>
+        </div>
+        <div class="lists">
+          <div class="list-block allow" id="list-allow">
+            <h3><span data-i18n="allowTitle">可承诺</span> <span class="count">0</span></h3>
+            <div class="body"></div>
+          </div>
+          <div class="list-block defer" id="list-defer">
+            <h3><span data-i18n="deferTitle">暂缓</span> <span class="count">0</span></h3>
+            <div class="body"></div>
+          </div>
+          <div class="list-block reject" id="list-reject">
+            <h3><span data-i18n="rejectTitle">明确拒单</span> <span class="count">0</span></h3>
+            <div class="body"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="primary" id="btn-copy" data-i18n="btnCopy">复制 Markdown</button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="app-footer">
+      <p data-i18n-html="footerNote"><strong>说明：</strong>本页把安监视觉交付里踩过的坑固化成可编辑规则，供报价／承诺前自查。规则见 <code>rules.json</code>。结构演示，非法律意见；不替代安全评价、法定安全设施或人工巡检。</p>
+      <p><span data-i18n="openSource">開源</span> · MIT · <a href="https://github.com/bianwuwei/safety-alert-boundary">GitHub</a> · <span data-i18n="siblingPrefix">姊妹工具：</span><a href="https://bianwuwei.github.io/vision-promise-boundary/" id="sibling-link" data-i18n="siblingName">质检承诺边界</a> · 無為</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
